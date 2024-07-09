@@ -12,11 +12,12 @@ const createCart = async (req, res) => {
             const productToAdd = [];
             for (let i = 0; i < req.body.products.length; i++) {
                 const crtProduct = req.body.products[i];
+               
                 const { price } = await ProducModal.findById(crtProduct.productID, {
                     price: 1,
                     _id: 0
                 })
-
+             
                 const products = {
                     ...crtProduct,
                     price,
@@ -25,16 +26,17 @@ const createCart = async (req, res) => {
 
                 cartTotal += crtProduct.quantity * price;
                 productToAdd.push(products);
+                console.log(cartTotal); 
 
 
             }
-               CartModal.create({
-                products:productToAdd,
-                cartTotal:cartTotal,
-                userID:req.user._id
-               })
+             CartModal.create({
+                products: productToAdd,
+                userID: req.body.userID,
+                cartTotal: cartTotal
+            })
 
-            console.log(cartTotal);
+            console.log(cartTotal); 
 
         }
         res.json({
@@ -53,14 +55,34 @@ const createCart = async (req, res) => {
 }
 const getCart = async (req, res) => {
     try {
-        const productCartList=await ProducModal.find({})
-        console.log(productCartList);
+        const cartList = await CartModal.find({})
+
         res.json({
-          productCartList
+            cartList
         })
 
     } catch (err) {
+        res.status(404).json({
+            sucess: false,
+            massage: err
+        })
+
+    }
+
+}
+const deleteCart = async (req, res) => {
+
+    try {
+        const cartList = await CartModal.findOneAndDelete({ __id: req.params.id})
+
         res.json({
+            sucess: true,
+            massage: "Cart Item Deleted Sucessfully",
+            cartList
+        })
+
+    } catch (err) {
+        res.status(404).json({
             sucess: false,
             massage: err
         })
@@ -71,7 +93,8 @@ const getCart = async (req, res) => {
 
 const cartController = {
     getCart,
-    createCart
+    createCart,
+    deleteCart
 }
 
 

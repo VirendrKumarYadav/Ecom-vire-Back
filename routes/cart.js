@@ -1,12 +1,15 @@
 const express = require("express");
 const cartController = require("../controller/cart")
-const auth=require("../authMiddlewaire/auth")
+const auth = require("../authMiddlewaire/auth")
 
 const router = express.Router();
 
 
-router.post("/",auth(["admin"]), cartController.createCart);
+router.post("/", cartController.createCart);
 
-router.get("/", auth(["admin"]),cartController.getCart);
+router.get("/", cartController.getCart);
+
+router.delete("/:id", cartController.deleteCart);
+
 
 module.exports = router;
