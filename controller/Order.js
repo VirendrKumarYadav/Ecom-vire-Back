@@ -2,16 +2,16 @@
 const OrderModal = require("../modal/order")
 const CartModal = require("../modal/cart")
 const CoopanModal = require("../modal/coopan")
-const UserModal= require("../modal/user")
+const UserModal = require("../modal/user")
 const dayjs = require("dayjs")
-const Razorpay= require("razorpay");
-const dotenv=require("dotenv")
+const Razorpay = require("razorpay");
+const dotenv = require("dotenv")
 dotenv.config();
-const uniqueId=require("uniqid")
+const uniqueId = require("uniqid")
 
-const razorpay=new Razorpay({
-key_id:process.env.RozerPay_Key_ID,
-key_secret:process.env.RozorPay_Key_Secret
+const razorpay = new Razorpay({
+    key_id: process.env.RozerPay_Key_ID,
+    key_secret: process.env.RozorPay_Key_Secret
 })
 
 
@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
             })
         }
         // console.log(userCart);
-        
+
         const coupon = await CoopanModal.findOne({ couponCode: req.body.coupan, isActive: true })
         // step-2 validation of coupan
         if (!coupon) {
@@ -68,25 +68,25 @@ const createOrder = async (req, res) => {
             deliveryAddress = req.user.address;
         }
         const deliveryDate = dayjs().add(7, "day");
-          
 
-  let userID=await UserModal.findById(req.body.userID)
-// console.log(req.body.userID,amount,coupon._id,deliveryAddress,deliveryDate,req.body.modeOfPayment);
+
+        let userID = await UserModal.findById(req.body.userID)
+        // console.log(req.body.userID,amount,coupon._id,deliveryAddress,deliveryDate,req.body.modeOfPayment);
         const orderDetails = {
             cart: userCart,
             userID: userID._id,
-            Amount:amount,
+            Amount: amount,
             coupon: coupon._id,
-            deliveryAddress:deliveryAddress,
-            orderPlacedAt:deliveryDate,
+            deliveryAddress: deliveryAddress,
+            orderPlacedAt: deliveryDate,
             orderStatus: "PALCED",
             modeOfPayment: req.body.modeOfPayment,
-            transationID:uniqueId()
+            transationID: uniqueId()
         };
 
         // strp -6 create order 
         const newOrder = await OrderModal.create(orderDetails);
-    
+
         if (req.body.modeOfPayment === "COD") {
             res.json({
                 sucess: true,
@@ -94,12 +94,12 @@ const createOrder = async (req, res) => {
             })
         } else {
             //   the user to payment gateway able to Pay 
-           
+
             const options = {
                 amount: amount * 100,
                 currency: "INR",
-                receipt: newOrder._id, 
-                payment_capture: 1, 
+                receipt: newOrder._id,
+                payment_capture: 1,
             };
             console.log("OPITONS", options);
             try {
@@ -150,7 +150,63 @@ const getOrder = async (req, res) => {
 
 
 }
+
+const createOrderByRazorpay = async (req, res) => {
+    const razorpay = new Razorpay({
+        key_id: 'rzp_test_yoPptvw6dEHh0e',
+        key_secret: 'lkgRF9PIeSNzCLWAe4d6eQ88',
+    });
+    const { amount, currency, receipt, notes } = req.body;
+
+    try {
+        const order = await razorpay.orders.create({
+            amount: amount,
+            currency: currency,
+            receipt: receipt,
+            notes: notes,
+        });
+        res.json(order);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+
+}
+
+
+
+
+const getOrdersFromRazorPay = async (req, res) => {
+    const email = req.params.email;
+    
+    try {
+        const razorpay = new Razorpay({
+            key_id: 'rzp_test_yoPptvw6dEHh0e',
+            key_secret: 'lkgRF9PIeSNzCLWAe4d6eQ88',
+        });
+
+        let data = await razorpay.orders.all();
+        data = data.items.filter((item) => item.notes && item.notes.email === email);
+
+        if (data.length > 0) {
+            const order = data[0];
+            res.json({
+                orderid: order.id,
+                orderDetails: order.notes,
+                amount: order.amount,
+            });
+        } else {
+            res.status(404).json({ message: 'No orders found for the given email.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
 module.exports = {
     createOrder,
-    getOrder
+    getOrder,
+    createOrderByRazorpay,
+    getOrdersFromRazorPay
 }

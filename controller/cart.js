@@ -58,7 +58,25 @@ const getCart = async (req, res) => {
         const cartList = await CartModal.find({})
 
         res.json({
-            cartList
+            data:cartList
+        })
+
+    } catch (err) {
+        res.status(404).json({
+            sucess: false,
+            massage: err
+        })
+
+    }
+
+}
+
+const getCartByID = async (req, res) => {
+    try {
+        const cartList = await CartModal.findOne({_id:req.params.id})
+
+        res.status(200).json({
+            data:cartList
         })
 
     } catch (err) {
@@ -197,6 +215,7 @@ const removeCartProductByID = async (req, res) => {
 
 
 const cartController = {
+    getCartByID,
     getCart,
     createCart,
     updateCart,
